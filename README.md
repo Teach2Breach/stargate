@@ -2,10 +2,12 @@
 
 A novel Rust library for locating function addresses in loaded Windows DLLs without relying on Export Address Table (EAT) parsing. This tool uses signature-based scanning to find functions at runtime, making it resistant to EDR hooking and DLL modifications.
 
+For more information about Stargate's approach and implementation, see [blog.md](blog.md).
+
 ## 🎯 Key Features
 
 - **Signature-Based Function Location**: Find functions by their byte signatures instead of EAT parsing
-- **Hook-Resistant Scanning**: Detect and work around EDR hooks and function modifications
+- **Hook-Resistant Scanning**: Detect EDR hooks and function modifications
 - **Runtime Function Discovery**: Locate functions in currently loaded DLLs at runtime
 - **Version-Specific Signatures**: Extract and use signatures specific to the exact DLL version
 - **Memory-Based Database**: Fast in-memory signature storage without external dependencies
@@ -19,7 +21,7 @@ Traditional function location relies on parsing the Export Address Table (EAT), 
 1. **Extract Clean Signatures**: Download clean DLL files from Microsoft Symbol Server
 2. **Build Signature Database**: Extract function byte signatures from clean DLLs
 3. **Scan Loaded Memory**: Search loaded DLLs in memory for matching signatures
-4. **Hook Detection**: Identify and work around common hooking techniques
+4. **Hook Detection**: Identify common hooking techniques
 5. **Function Location**: Return the actual runtime addresses of functions
 
 ### Hook Resistance
@@ -221,18 +223,6 @@ This example demonstrates clean function calling with minimal logging - only pri
 - `noldr` - System DLL loading and function resolution  
 - `moonwalk` - Memory scanning and DLL base address location
 - `thiserror` - Error handling
-
-## 📄 License
-
-[Add your license information here]
-
-## 🤝 Contributing
-
-[Add contribution guidelines here]
-
-## ⚠️ Disclaimer
-
-This tool is for educational and research purposes. Use responsibly and in accordance with applicable laws and regulations.
 
 ## 🔗 Related Projects
 
