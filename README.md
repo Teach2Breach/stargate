@@ -16,13 +16,14 @@ For more information about Stargate's approach and implementation, see [blog.md]
 ## 🚀 How It Works
 
 ### Novel Approach
-Traditional function location relies on parsing the Export Address Table (EAT), which can be easily hooked or modified by EDR solutions. This tool takes a different approach:
+Traditional function location relies on parsing the Export Address Table (EAT) and walking the Process Environment Block (PEB), which can be easily hooked or modified by EDR solutions. This tool takes a different approach:
 
 1. **Extract Clean Signatures**: Download clean DLL files from Microsoft Symbol Server
 2. **Build Signature Database**: Extract function byte signatures from clean DLLs
-3. **Scan Loaded Memory**: Search loaded DLLs in memory for matching signatures
-4. **Hook Detection**: Identify common hooking techniques
-5. **Function Location**: Return the actual runtime addresses of functions
+3. **Scan Loaded Memory**: Use Moonwalk to find loaded DLLs without PEB walking
+4. **Signature Matching**: Search loaded DLLs in memory for matching signatures
+5. **Hook Detection**: Identify common hooking techniques
+6. **Function Location**: Return the actual runtime addresses of functions
 
 ### Hook Resistance
 The scanner implements multiple detection and bypass methods:
@@ -272,7 +273,7 @@ This example demonstrates clean function calling with minimal logging - only pri
 ## 🎯 Use Cases
 
 ### Red Team Operations
-- **Bypass EDR**: Find functions without triggering EAT parsing hooks
+- **Bypass EDR**: Find functions without triggering EAT parsing or PEB walking hooks
 - **Dynamic Function Resolution**: Locate functions at runtime without hardcoded addresses
 - **Hook Detection**: Identify when functions have been modified
 - **Version Independence**: Work with different Windows/DLL versions
@@ -304,6 +305,6 @@ This example demonstrates clean function calling with minimal logging - only pri
 
 ## 🔗 Related Projects
 
-- [moonwalk](https://github.com/Teach2Breach/moonwalk) - Memory scanning library
+- [moonwalk](https://github.com/Teach2Breach/moonwalk) - Memory scanning library (enables PEB-free DLL discovery)
 - [byont](https://github.com/Teach2Breach/byont) - Clean DLL extraction
 - [noldr](https://github.com/Teach2Breach/noldr) - System DLL loading
