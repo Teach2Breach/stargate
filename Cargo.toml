@@ -1,0 +1,39 @@
+[package]
+name = "stargate"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "stargate"
+path = "src/lib.rs"
+
+[[bin]]
+name = "stargate"
+path = "src/main.rs"
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"
+
+[[example]]
+name = "signature_scanning"
+path = "examples/signature_scanning.rs"
+
+[[example]]
+name = "function_calling"
+path = "examples/function_calling.rs"
+
+[[example]]
+name = "silent_call"
+path = "examples/silent_call.rs"
+
+[dependencies]
+byont = { git = "https://github.com/Teach2Breach/byont.git", branch = "opsec" }
+noldr = { git = "https://github.com/Teach2Breach/noldr.git", branch = "main" }
+thiserror = "1.0"
+moonwalk = { git = "https://github.com/Teach2Breach/moonwalk.git", branch = "opsec-dev" }
+
+[profile.release]
+opt-level = 0
+lto = false
+codegen-units = 1
