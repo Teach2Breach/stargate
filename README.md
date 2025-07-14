@@ -233,7 +233,7 @@ This example demonstrates clean function calling with minimal logging - only pri
 ## 🔧 Dependencies
 
 - `byont` - Clean DLL extraction and processing
-- `noldr` - System DLL loading and function resolution  
+- `noldr` - System DLL loading and function resolution. Uses PEB walk and EAT parsing. stargate only uses noldr to validate addresses as a proof of concept. It is not used in the library, only in demo functions. 
 - `moonwalk` - Memory scanning and DLL base address location
 - `thiserror` - Error handling
 
