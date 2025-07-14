@@ -1,8 +1,12 @@
 # Stargate
 
-A novel Rust library for locating function addresses in loaded Windows DLLs without relying on Export Address Table (EAT) parsing. This tool uses signature-based scanning to find functions at runtime, making it resistant to EDR hooking and DLL modifications.
+**Signature-based function discovery**
 
-For more information about Stargate's approach and implementation, see [blog.md](blog.md).
+Stargate is a novel Rust library that takes a fundamentally different approach to locating Windows API functions. Instead of relying on easily-hooked structures like the PEB or Export Address Table, Stargate uses signature-based scanning to find functions in memory. Used in combination with [moonwalk](https://github.com/Teach2Breach/moonwalk) to avoid PEB walking to locate target dll base addresses. Together moonwalk and stargate represent a novel approach to locating windows API function addresses in memory.
+
+**Why this matters:** Traditional function location techniques follow well-trodden paths that defenders have learned to monitor. Stargate treats function discovery as a pattern matching problem rather than a structure parsing problem.
+
+For detailed technical information, see [blog.md](blog.md).
 
 ## 🎯 Key Features
 
@@ -11,27 +15,26 @@ For more information about Stargate's approach and implementation, see [blog.md]
 - **Runtime Function Discovery**: Locate functions in currently loaded DLLs at runtime
 - **Version-Specific Signatures**: Extract and use signatures specific to the exact DLL version
 - **Memory-Based Database**: Fast in-memory signature storage without external dependencies
-- **Multi-DLL Support**: Works with any Windows DLL (ntdll, kernel32, user32, etc.)
+- **Multi-DLL Support**: Works with any loaded Windows DLL (ntdll, kernel32, etc.)
 
 ## 🚀 How It Works
 
-### Novel Approach
-Traditional function location relies on parsing the Export Address Table (EAT) and walking the Process Environment Block (PEB), which can be easily hooked or modified by EDR solutions. This tool takes a different approach:
+Instead of asking "where is the export table pointing?", Stargate asks "what does this function look like in memory?"
 
-1. **Extract Clean Signatures**: Download clean DLL files from Microsoft Symbol Server
-2. **Build Signature Database**: Extract function byte signatures from clean DLLs
-3. **Scan Loaded Memory**: Use Moonwalk to find loaded DLLs without PEB walking
-4. **Signature Matching**: Search loaded DLLs in memory for matching signatures
-5. **Hook Detection**: Identify common hooking techniques
-6. **Function Location**: Return the actual runtime addresses of functions
+### The Process
+1. **Get Clean DLLs**: Download unmodified DLL files from Microsoft's Symbol Server
+2. **Extract Signatures**: Pull unique byte patterns from function beginnings
+3. **Find Loaded DLLs**: Use Moonwalk to locate DLLs in memory (no PEB walking)
+4. **Pattern Match**: Scan memory for matching signatures
+5. **Detect Hooks**: Identify when functions have been modified
+6. **Return Addresses**: Get the actual runtime function locations
 
 ### Hook Resistance
-The scanner implements multiple detection and bypass methods:
-- **Exact Match**: Try to find exact signature matches
-- **Partial Match**: Match signatures while ignoring common hook bytes
-- **Relocation Detection**: Find functions that have been moved in memory
-- **Hook Pattern Recognition**: Detect JMP, CALL, and inline hooks
-- **Alternative Location Search**: Check common relocation patterns
+Stargate doesn't just detect hooks—it works around them:
+- **Exact Match**: Find functions exactly where expected
+- **Hook Detection**: Identify JMP, CALL, and inline hooks
+- **Relocation Search**: Find functions that have been moved
+- **Alternative Locations**: Check common relocation patterns
 
 ## 📦 Installation
 
@@ -43,34 +46,6 @@ stargate = { git = "https://github.com/Teach2Breach/stargate.git" }
 ```
 
 ## 🔧 Quick Start
-
-### Standard Usage
-```rust
-use stargate::*;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Extract signatures from clean ntdll (version detected automatically)
-    let db = extract_all_signatures("ntdll", 32)?;
-    
-    // Scan loaded ntdll for functions
-    let results = scan_loaded_dll("ntdll", &db)?;
-    
-    // Find specific function
-    if let Some(result) = results.iter().find(|r| r.function_name == "NtQuerySystemTime") {
-        println!("Found NtQuerySystemTime at 0x{:x}", result.found_address);
-        
-        // Call the function if signature matches exactly
-        if result.signature_matches {
-            unsafe {
-                let func: extern "system" fn() = std::mem::transmute(result.found_address);
-                func();
-            }
-        }
-    }
-    
-    Ok(())
-}
-```
 
 ### Silent Usage (Recommended for Implants)
 ```rust
@@ -149,40 +124,6 @@ cargo run -- kernel32 Sleep 64
 ```
 
 ## 📚 Examples
-
-### Basic Usage
-```bash
-cargo run --example basic_usage
-```
-
-**Example Output:**
-```
-DLL Inspector Library - Basic Usage Example
-
-=== Example 1: Extract all signatures ===
-Extracted 2514 signatures from ntdll.dll
-
-=== Example 2: Get specific signature ===
-Found NtQuerySystemTime signature:
-  RVA: 0x162900
-  Bytes: e9 2b 12 f9 ff 66 66 66 0f 1f 84 00 00 00 00 00 4c 8b d1 b8 5b 00 00 00 f6 04 25 08 03 fe 7f 01    
-
-=== Example 3: Compare with system ===
-✅ SIGNATURES MATCH!
-
-=== Example 4: Database statistics ===
-Total signatures: 2514
-Unique DLLs: 1
-Unique Windows versions: 1
-
-=== Example 5: Search for Query functions ===
-Found 5 Query functions (showing first 5):
-  - LdrQueryOptionalDelayLoadedAPI (RVA: 0x11e6d0)
-  - NtQueryInformationJobObject (RVA: 0x164870)
-  - RtlQueryTokenHostIdAsUlong64 (RVA: 0x110260)
-  - NtQueryWnfStateNameInformation (RVA: 0x164bd0)
-  - ZwQueryValueKey (RVA: 0x1620a0)
-```
 
 ### Signature Scanning Demo
 ```bash
@@ -263,13 +204,6 @@ This example demonstrates clean function calling with minimal logging - only pri
 - `ScanResult` - Result of signature scanning operation
 - `HookDetails` - Information about detected hooks
 
-### Hook Detection
-
-- `JumpHook` - JMP instruction at function start
-- `CallHook` - CALL instruction at function start  
-- `InlineHook` - Modified bytes within function
-- `IATHook` - Import Address Table hook
-
 ## 🎯 Use Cases
 
 ### Red Team Operations
@@ -289,7 +223,7 @@ This example demonstrates clean function calling with minimal logging - only pri
 - **Plugin Systems**: Load and call functions dynamically
 - **Hot Patching**: Locate functions for runtime modification
 
-## 🛡️ Security Considerations
+## ⚠️ Security Considerations
 
 - **Memory Access**: Requires read access to process memory
 - **Signature Reliability**: Signatures may change between Windows versions
@@ -302,6 +236,10 @@ This example demonstrates clean function calling with minimal logging - only pri
 - `noldr` - System DLL loading and function resolution  
 - `moonwalk` - Memory scanning and DLL base address location
 - `thiserror` - Error handling
+
+## Future Development
+
+- `unhooking` - add optional unhooking feature for functions detected with hooks
 
 ## 🔗 Related Projects
 
