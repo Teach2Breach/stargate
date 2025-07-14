@@ -154,15 +154,93 @@ cargo run -- kernel32 Sleep 64
 cargo run --example basic_usage
 ```
 
+**Example Output:**
+```
+DLL Inspector Library - Basic Usage Example
+
+=== Example 1: Extract all signatures ===
+Extracted 2514 signatures from ntdll.dll
+
+=== Example 2: Get specific signature ===
+Found NtQuerySystemTime signature:
+  RVA: 0x162900
+  Bytes: e9 2b 12 f9 ff 66 66 66 0f 1f 84 00 00 00 00 00 4c 8b d1 b8 5b 00 00 00 f6 04 25 08 03 fe 7f 01    
+
+=== Example 3: Compare with system ===
+✅ SIGNATURES MATCH!
+
+=== Example 4: Database statistics ===
+Total signatures: 2514
+Unique DLLs: 1
+Unique Windows versions: 1
+
+=== Example 5: Search for Query functions ===
+Found 5 Query functions (showing first 5):
+  - LdrQueryOptionalDelayLoadedAPI (RVA: 0x11e6d0)
+  - NtQueryInformationJobObject (RVA: 0x164870)
+  - RtlQueryTokenHostIdAsUlong64 (RVA: 0x110260)
+  - NtQueryWnfStateNameInformation (RVA: 0x164bd0)
+  - ZwQueryValueKey (RVA: 0x1620a0)
+```
+
 ### Signature Scanning Demo
 ```bash
 cargo run --example signature_scanning
+```
+
+**Example Output:**
+```
+DLL Inspector - Signature Scanning Example
+This example demonstrates hook-resistant signature scanning
+
+=== Step 1: Extracting Signatures ===
+Extracting ntdll signatures...
+Extracted 2514 ntdll signatures
+Extracting kernel32 signatures...
+Extracted 1691 kernel32 signatures
+Combined database contains 4205 signatures
+
+=== Step 2: Scanning Loaded DLLs ===
+Scanning loaded ntdll.dll...
+Found 2514 functions in loaded ntdll
+Scanning loaded kernel32.dll...
+Found 1691 functions in loaded kernel32
+
+=== Step 3: Analysis Results ===
+Total functions found: 4205
+Exact signature matches: 4196
+Hooked functions detected: 9
+Relocated functions: 0
+
+=== Step 4: Detailed Function Analysis ===
+Function: NtQuerySystemTime
+  DLL: ntdll
+  Found at: 0x7fff15f02900
+  Expected RVA: 0x162900
+  Actual RVA: 0x162900
+  Scan method: ExactMatch
+  Confidence: 100.0%
+  ✅ Signature matches exactly!
+
+Function: Sleep
+  DLL: kernel32
+  Found at: 0x7fff14e71980
+  Expected RVA: 0x31980
+  Actual RVA: 0x31980
+  Scan method: ExactMatch
+  Confidence: 100.0%
+  ✅ Signature matches exactly!
 ```
 
 ### Silent Function Calling (Recommended for Implants)
 For opsec-sensitive operations and implants, use the silent example that minimizes output:
 ```bash
 cargo run --example silent_call
+```
+
+**Example Output:**
+```
+GetTickCount: 229817843
 ```
 
 This example demonstrates clean function calling with minimal logging - only prints the function name and result.
