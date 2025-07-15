@@ -153,7 +153,7 @@ pub fn extract_function_signature(
 
 ### 4. Memory Scanning with Moonwalk
 
-The **Moonwalk** library provides the foundation for scanning loaded DLLs in memory:
+The **Moonwalk** library provides the foundation for scanning loaded DLLs in memory. See the [moonwalk](https://github.com/Teach2Breach/moonwalk) repo for how it uses stack walking instead of PEB walking to locate dll addresses:
 
 ```rust
 // Find the loaded DLL in memory
@@ -161,21 +161,9 @@ let dll_base = find_dll_base(dll_name)
     .ok_or_else(|| SignatureError::DllNotFound(dll_name.to_string()))?;
 ```
 
-### 5. System Function Resolution with Noldr (Optional)
-
-The **Noldr** library is used only for comparison and verification purposes, allowing us to compare our signature-based results with traditional function resolution:
-
-```rust
-// Get system DLL address for comparison
-let dll_base = get_system_dll_address(&format!("{}.dll", dll_name))?;
-
-// Get function address using traditional methods
-let function_address = get_system_function_address(dll_base, function_name)?;
-```
-
 This is optional and only used when we want to verify the accuracy of our signature-based approach.
 
-### 6. Multi-Method Signature Matching
+### 5. Multi-Method Signature Matching
 
 Stargate implements a sophisticated multi-stage scanning approach that progressively falls back to more aggressive methods:
 
