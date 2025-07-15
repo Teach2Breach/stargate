@@ -1,19 +1,20 @@
 use stargate::*;
 use std::ffi::c_void;
 
-type GetTickCountFunc = extern "system" fn() -> u32;
+type NtQuerySystemTimeFunc = extern "system" fn(lpSystemTime: *mut i64) -> i32;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Extract signatures from kernel32 (silent, no printing)
-    let db = extract_all_signatures("kernel32", 32)?;
+    // Extract signatures from ntdll (silent, no printing)
+    let db = extract_all_signatures("ntdll", 32)?;
 
-    // Find and call GetTickCount
-    if let Some(result) = find_specific_function("kernel32", "GetTickCount", &db) {
-        let get_tick_count: GetTickCountFunc = unsafe { std::mem::transmute(result.found_address as *const c_void) };
-        let uptime = get_tick_count();
-        println!("GetTickCount: {}", uptime);
+    // Find and call NtQuerySystemTime
+    if let Some(result) = find_specific_function("ntdll", "NtQuerySystemTime", &db) {
+        let query_time: NtQuerySystemTimeFunc = unsafe { std::mem::transmute(result.found_address as *const c_void) };
+        let mut system_time = 0i64;
+        let status = query_time(&mut system_time);
+        println!("NtQuerySystemTime: {} (status: {})", system_time, status);
     } else {
-        println!("GetTickCount: not found");
+        println!("NtQuerySystemTime: not found");
     }
     Ok(())
 } 

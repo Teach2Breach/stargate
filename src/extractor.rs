@@ -1,6 +1,5 @@
 use crate::signature::{FunctionSignature, SignatureDatabase, SignatureError};
 use byont::*;
-use noldr::*;
 
 /// Extract all function signatures from a DLL
 pub fn extract_all_signatures(
@@ -259,15 +258,4 @@ pub fn extract_system_function_bytes(
         let func_bytes = std::slice::from_raw_parts(function_address as *const u8, signature_length);
         func_bytes.to_vec()
     }
-}
-
-/// Get system DLL base address
-pub fn get_system_dll_address(dll_name: &str) -> Option<*const std::ffi::c_void> {
-    let teb = get_teb();
-    get_dll_address(dll_name.to_string(), teb)
-}
-
-/// Get function address from system-loaded DLL
-pub fn get_system_function_address(dll_base: *const std::ffi::c_void, function_name: &str) -> Option<*const std::ffi::c_void> {
-    get_function_address(dll_base, function_name)
 } 

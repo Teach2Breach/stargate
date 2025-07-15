@@ -1,5 +1,4 @@
 use crate::signature::{FunctionSignature, SignatureDatabase, SignatureError};
-use crate::extractor::{get_system_dll_address, get_system_function_address};
 use moonwalk::find_dll_base;
 
 /// Result of a signature scan operation

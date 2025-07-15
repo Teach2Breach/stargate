@@ -18,20 +18,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("NtQuerySystemTime not found in database");
     }
 
-    // Example 3: Compare with system
-    println!("\n=== Example 3: Compare with system ===");
-    let result = compare_with_system(&db, "ntdll", "NtQuerySystemTime", "dynamic", 32)?;
-    print_comparison_result("ntdll", "NtQuerySystemTime", &result);
-
-    // Example 4: Get database statistics
-    println!("\n=== Example 4: Database statistics ===");
+    // Example 3: Get database statistics
+    println!("\n=== Example 3: Database statistics ===");
     let stats = db.get_stats();
     println!("Total signatures: {}", stats.total_signatures);
     println!("Unique DLLs: {}", stats.unique_dlls);
     println!("Unique Windows versions: {}", stats.unique_versions);
 
-    // Example 5: Search for functions containing "Query"
-    println!("\n=== Example 5: Search for Query functions ===");
+    // Example 4: Search for functions containing "Query"
+    println!("\n=== Example 4: Search for Query functions ===");
     let query_functions: Vec<_> = db.get_signatures_by_dll("ntdll")
         .into_iter()
         .filter(|sig| sig.function_name.contains("Query"))
@@ -43,8 +38,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("  - {} (RVA: 0x{:x})", sig.function_name, sig.function_rva);
     }
 
-    // Example 6: Extract single signature
-    println!("\n=== Example 6: Extract single signature ===");
+    // Example 5: Extract single signature
+    println!("\n=== Example 5: Extract single signature ===");
     let single_sig = extract_single_signature("kernel32", "Sleep", 32)?;
     if let Some(sig) = single_sig {
         println!("Extracted Sleep signature:");

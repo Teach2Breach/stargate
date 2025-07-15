@@ -1,5 +1,4 @@
 use crate::signature::{ComparisonResult, SignatureDatabase, SignatureDifference, SignatureError};
-use crate::extractor::{extract_system_function_bytes, get_system_dll_address, get_system_function_address};
 
 /// Compare a signature from the database with a system-loaded function
 pub fn compare_signatures(
@@ -58,53 +57,7 @@ pub fn compare_signatures(
     }
 }
 
-/// Compare a function signature with the system-loaded version
-pub fn compare_with_system(
-    db: &SignatureDatabase,
-    dll_name: &str,
-    function_name: &str,
-    windows_version: &str,
-    signature_length: usize,
-) -> Result<ComparisonResult, SignatureError> {
-    // Get system DLL address
-    let dll_base = get_system_dll_address(&format!("{}.dll", dll_name))
-        .ok_or_else(|| SignatureError::DllNotFound(dll_name.to_string()))?;
 
-    // Get function address
-    let function_address = get_system_function_address(dll_base, function_name)
-        .ok_or_else(|| SignatureError::FunctionNotFound(function_name.to_string()))?;
-
-    // Extract system function bytes
-    let system_bytes = extract_system_function_bytes(function_address as *mut u8, signature_length);
-
-    // Compare with database
-    compare_signatures(db, dll_name, function_name, windows_version, &system_bytes)
-}
-
-/// Compare all signatures in the database with system-loaded functions
-pub fn compare_all_with_system(
-    db: &SignatureDatabase,
-    dll_name: &str,
-    windows_version: &str,
-    signature_length: usize,
-) -> Vec<(String, ComparisonResult)> {
-    let signatures = db.get_signatures_by_dll_and_version(dll_name, windows_version);
-    let mut results = Vec::new();
-
-    for signature in signatures {
-        match compare_with_system(db, dll_name, &signature.function_name, windows_version, signature_length) {
-            Ok(comparison) => {
-                results.push((signature.function_name.clone(), comparison));
-            }
-            Err(_) => {
-                // Skip functions that can't be compared
-                continue;
-            }
-        }
-    }
-
-    results
-}
 
 /// Print comparison results in a formatted way
 pub fn print_comparison_result(

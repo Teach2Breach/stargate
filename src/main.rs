@@ -56,28 +56,12 @@ fn main() {
         println!("... and {} more signatures", signatures.len() - 10);
     }
 
-    // Test comparison with system if function name provided
+    // Note: System comparison functionality has been removed to avoid PEB walking and EAT parsing
     if let Some(ref func_name) = test_function_name {
-        println!("\n=== Testing Signature Comparison ===");
-        match compare_with_system(&database, dll_name, func_name, "dynamic", signature_length) {
-            Ok(result) => {
-                print_comparison_result(dll_name, func_name, &result);
-            }
-            Err(e) => {
-                println!("❌ Failed to compare signature: {}", e);
-            }
-        }
-    } else {
-        println!("\nNo function name provided for comparison test.");
-        println!("To test signature comparison, provide a function name as the second argument.");
+        println!("\n=== Function Information ===");
+        println!("Function: {} (comparison with system not available)", func_name);
+        println!("Note: System comparison was removed to avoid PEB walking and EAT parsing techniques");
     }
-
-    // Optional: Compare all signatures with system (commented out for performance)
-    /*
-    println!("\n=== Comparing All Signatures with System ===");
-    let comparison_results = compare_all_with_system(&database, dll_name, &windows_version, signature_length);
-    print_comparison_summary(&comparison_results);
-    */
 
     println!("\n✅ DLL Inspector completed successfully!");
     println!("Database contains {} signatures in memory", database.len());

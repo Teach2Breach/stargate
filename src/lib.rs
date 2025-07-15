@@ -50,14 +50,10 @@ pub use extractor::{
     extract_single_signature,
     get_all_export_names,
     extract_system_function_bytes,
-    get_system_dll_address,
-    get_system_function_address,
 };
 
 pub use comparison::{
     compare_signatures,
-    compare_with_system,
-    compare_all_with_system,
     print_comparison_result,
     print_comparison_summary,
 };
@@ -96,19 +92,4 @@ pub fn extract_single_signature_default(
     extract_single_signature(dll_name, function_name, DEFAULT_SIGNATURE_LENGTH)
 }
 
-/// Compare a function with system using default settings
-pub fn compare_with_system_default(
-    db: &SignatureDatabase,
-    dll_name: &str,
-    function_name: &str,
-) -> Result<ComparisonResult, SignatureError> {
-    compare_with_system(db, dll_name, function_name, "dynamic", DEFAULT_SIGNATURE_LENGTH)
-}
-
-/// Compare all signatures with system using default settings
-pub fn compare_all_with_system_default(
-    db: &SignatureDatabase,
-    dll_name: &str,
-) -> Vec<(String, ComparisonResult)> {
-    compare_all_with_system(db, dll_name, "dynamic", DEFAULT_SIGNATURE_LENGTH)
-} 
+ 

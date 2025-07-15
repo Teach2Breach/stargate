@@ -223,17 +223,17 @@ Function: Sleep
 ```
 
 ### Silent Function Calling (Recommended for Implants)
-For opsec-sensitive operations and implants, use the silent example that minimizes output:
+For opsec-sensitive operations and implants, use the silent example that minimizes output and avoids kernel32:
 ```bash
-cargo run --example silent_call
+cargo run --release --target x86_64-pc-windows-msvc --example silent_call
 ```
 
 **Example Output:**
 ```
-GetTickCount: 229817843
+NtQuerySystemTime: 133970745314599291 (status: 0)
 ```
 
-This example demonstrates clean function calling with minimal logging - only prints the function name and result.
+This example demonstrates clean function calling with minimal logging - only prints the function name and result, and uses ntdll for maximum opsec.
 
 ### Building Examples with Static CRT
 For production builds with static linking:
@@ -290,24 +290,11 @@ target\x86_64-pc-windows-msvc\release\examples\enhanced_hook_detection.exe
 - **Signature Reliability**: Signatures may change between Windows versions
 - **Hook Detection**: Not all hooking techniques may be detected
 - **Performance**: Scanning large DLLs can be resource-intensive
-- **EDR Triggers**: Scanning kernel32.dll may trigger security products in strict environments
-
-### Recommended Usage for Strict Environments
-
-For environments with aggressive security monitoring, it's recommended to scan only `ntdll.dll`:
-
-```rust
-// Recommended: Scan only ntdll for strict environments
-let db = extract_all_signatures("ntdll", 32)?;
-let results = scan_loaded_dll("ntdll", &db)?;
-
-// Avoid scanning kernel32 in strict environments
-// let db = extract_all_signatures("kernel32", 32)?; // May trigger EDR
-```
+- **EDR Triggers**: Scanning all of kernel32.dll may trigger security products in strict environments - more testing is needed
 
 **Why ntdll-only scanning is recommended:**
 - `ntdll.dll` contains the core Windows NT functions that are less likely to be monitored
-- `kernel32.dll` scanning has been observed to trigger some security products
+- `kernel32.dll` scanning has been observed to trigger some security products - more testing is needed to patch a solution
 - Most critical functions can be accessed through ntdll equivalents
 - Reduces the attack surface for detection
 - Enhanced hook detection works best with ntdll syscall patterns
@@ -321,7 +308,6 @@ let results = scan_loaded_dll("ntdll", &db)?;
 ## 🔧 Dependencies
 
 - `byont` - Clean DLL extraction and processing
-- `noldr` - System DLL loading and function resolution. Uses PEB walk and EAT parsing. stargate only uses noldr to validate addresses as a proof of concept. It is not used in the library, only in demo functions. 
 - `moonwalk` - Memory scanning and DLL base address location
 - `thiserror` - Error handling
 
@@ -333,4 +319,3 @@ let results = scan_loaded_dll("ntdll", &db)?;
 
 - [moonwalk](https://github.com/Teach2Breach/moonwalk) - Memory scanning library (enables PEB-free DLL discovery)
 - [byont](https://github.com/Teach2Breach/byont) - Clean DLL extraction
-- [noldr](https://github.com/Teach2Breach/noldr) - System DLL loading

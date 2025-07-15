@@ -502,4 +502,4 @@ Potential areas for future development include:
 - **Performance Optimization**: Improving scanning speed and efficiency
 - **Optional Unhooking Modules**: Unhook specific functions before use
 
-*Stargate is part of the Teach2Breach rust offensive tooling ecosystem, alongside other innovative tools like Moonwalk (memory scanning), Byont (clean DLL extraction), and Noldr (system function resolution). Together, these tools provide a comprehensive toolkit for advanced Windows security research and red team operations.* 
+*Stargate is part of the Teach2Breach rust offensive tooling ecosystem, alongside other innovative tools like Moonwalk (memory scanning) and Byont (clean DLL extraction). Together, these tools provide a comprehensive toolkit for advanced Windows security research and red team operations.* 

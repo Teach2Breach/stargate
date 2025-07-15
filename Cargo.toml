@@ -29,7 +29,7 @@ path = "examples/silent_call.rs"
 
 [dependencies]
 byont = { git = "https://github.com/Teach2Breach/byont.git", branch = "opsec" }
-noldr = { git = "https://github.com/Teach2Breach/noldr.git", branch = "main" }
+
 thiserror = "1.0"
 moonwalk = { git = "https://github.com/Teach2Breach/moonwalk.git", branch = "opsec-dev" }
 
