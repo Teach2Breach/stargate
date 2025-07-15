@@ -11,7 +11,7 @@ For detailed technical information, see [blog.md](blog.md).
 ## 🎯 Key Features
 
 - **Signature-Based Function Location**: Find functions by their byte signatures instead of EAT parsing
-- **Hook-Resistant Scanning**: Detect EDR hooks and function modifications
+- **Enhanced Hook Detection**: Advanced inline hook detection with syscall pattern recognition
 - **Runtime Function Discovery**: Locate functions in currently loaded DLLs at runtime
 - **Version-Specific Signatures**: Extract and use signatures specific to the exact DLL version
 - **Memory-Based Database**: Fast in-memory signature storage without external dependencies
@@ -29,10 +29,12 @@ Instead of asking "where is the export table pointing?", Stargate asks "what doe
 5. **Detect Hooks**: Identify when functions have been modified
 6. **Return Addresses**: Get the actual runtime function locations
 
-### Hook Resistance
-Stargate doesn't just detect hooks—it works around them:
-- **Exact Match**: Find functions exactly where expected
-- **Hook Detection**: Identify JMP, CALL, and inline hooks
+### Enhanced Hook Detection
+Stargate provides advanced inline hook detection capabilities:
+- **Syscall Pattern Recognition**: Detect ntdll syscall prologue modifications (4C 8B D1)
+- **Multiple Hook Patterns**: Identify JMP, CALL, PUSH+RET, and MOV+JMP patterns
+- **Inline Hook Detection**: Find modified bytes within function bodies
+- **Target Address Analysis**: Analyze hook redirect targets for suspicious patterns
 - **Relocation Search**: Find functions that have been moved
 - **Alternative Locations**: Check common relocation patterns
 
@@ -52,20 +54,21 @@ stargate = { git = "https://github.com/Teach2Breach/stargate.git" }
 use stargate::*;
 use std::ffi::c_void;
 
-type GetTickCountFunc = extern "system" fn() -> u32;
+type NtQuerySystemTimeFunc = extern "system" fn(lpSystemTime: *mut i64) -> i32;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Extract signatures silently (no debug output)
-    let db = extract_all_signatures("kernel32", 32)?;
+    // Extract signatures silently (ntdll recommended for strict environments)
+    let db = extract_all_signatures("ntdll", 32)?;
     
     // Find and call function with minimal output
-    if let Some(result) = find_specific_function("kernel32", "GetTickCount", &db) {
-        let get_tick_count: GetTickCountFunc = unsafe { 
+    if let Some(result) = find_specific_function("ntdll", "NtQuerySystemTime", &db) {
+        let query_time: NtQuerySystemTimeFunc = unsafe { 
             std::mem::transmute(result.found_address as *const c_void) 
         };
-        let uptime = get_tick_count();
+        let mut system_time = 0i64;
+        let status = query_time(&mut system_time);
         // Only print essential result
-        println!("GetTickCount: {}", uptime);
+        println!("NtQuerySystemTime: {} (status: {})", system_time, status);
     }
     Ok(())
 }
@@ -77,24 +80,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 // Extract all signatures from a clean DLL (version detected automatically)
+// Recommended: Use ntdll for strict environments
 let db = extract_all_signatures("ntdll", 32)?;
 println!("Extracted {} signatures", db.len());
 
 // Extract single function signature
-let sig = extract_single_signature("kernel32", "Sleep", 32)?;
+let sig = extract_single_signature("ntdll", "NtQuerySystemTime", 32)?;
+
+// Note: kernel32 scanning may trigger security products in strict environments
+// let sig = extract_single_signature("kernel32", "Sleep", 32)?; // Use with caution
 ```
 
 ### Scan Loaded DLLs for Functions
 
 ```rust
-// Scan entire DLL
+// Scan entire DLL (recommended: ntdll for strict environments)
 let results = scan_loaded_dll("ntdll", &db)?;
 
 // Find specific function
-let result = find_specific_function("kernel32", "Sleep", &db)?;
+let result = find_specific_function("ntdll", "NtQuerySystemTime", &db)?;
 
-// Scan all loaded DLLs
+// Scan all loaded DLLs (use with caution in strict environments)
 let all_results = scan_all_loaded_dlls(&db);
+
+// Note: kernel32 scanning may trigger security products
+// let result = find_specific_function("kernel32", "Sleep", &db)?; // Use with caution
 ```
 
 ### Analyze Results
@@ -124,6 +134,44 @@ cargo run -- kernel32 Sleep 64
 ```
 
 ## 📚 Examples
+
+### Enhanced Hook Detection Demo
+```bash
+cargo run --example enhanced_hook_detection
+```
+
+**Features:**
+- Advanced syscall pattern recognition (4C 8B D1)
+- Multiple hook pattern detection (JMP, CALL, PUSH+RET, MOV+JMP)
+- Inline hook identification
+- Target address analysis
+- Detailed reporting to `enhanced_hooks.txt`
+
+**Example Output:**
+```
+Enhanced Hook Detection Scanner
+This example demonstrates improved hook detection with syscall pattern analysis
+
+=== Step 1: Extracting Signatures ===
+Extracted 2514 signatures from ntdll
+
+=== Step 2: Enhanced Hook Detection ===
+Scanned 2514 functions
+
+=== Step 3: Analyzing Results ===
+Found 9 hooked functions out of 2514 total functions
+
+=== Step 4: Writing Enhanced Analysis ===
+Enhanced hook report written to enhanced_hooks.txt
+Found 9 hooked functions
+
+=== Step 5: Enhanced Console Summary ===
+⚠️  ENHANCED HOOK DETECTION RESULTS:
+  ntdll!NtCreateFile at 0x7fff15f02900
+    Hook type: JumpHook
+    Target: 0x7fff12345678
+    Syscall pattern detected!
+```
 
 ### Signature Scanning Demo
 ```bash
@@ -187,6 +235,19 @@ GetTickCount: 229817843
 
 This example demonstrates clean function calling with minimal logging - only prints the function name and result.
 
+### Building Examples with Static CRT
+For production builds with static linking:
+```bash
+# Set environment variable for static CRT
+set RUSTFLAGS=-C target-feature=+crt-static
+
+# Build enhanced hook detection example
+cargo build --release --target x86_64-pc-windows-msvc --example enhanced_hook_detection
+
+# Run the built example
+target\x86_64-pc-windows-msvc\release\examples\enhanced_hook_detection.exe
+```
+
 ## 🔍 API Reference
 
 ### Core Functions
@@ -229,6 +290,33 @@ This example demonstrates clean function calling with minimal logging - only pri
 - **Signature Reliability**: Signatures may change between Windows versions
 - **Hook Detection**: Not all hooking techniques may be detected
 - **Performance**: Scanning large DLLs can be resource-intensive
+- **EDR Triggers**: Scanning kernel32.dll may trigger security products in strict environments
+
+### Recommended Usage for Strict Environments
+
+For environments with aggressive security monitoring, it's recommended to scan only `ntdll.dll`:
+
+```rust
+// Recommended: Scan only ntdll for strict environments
+let db = extract_all_signatures("ntdll", 32)?;
+let results = scan_loaded_dll("ntdll", &db)?;
+
+// Avoid scanning kernel32 in strict environments
+// let db = extract_all_signatures("kernel32", 32)?; // May trigger EDR
+```
+
+**Why ntdll-only scanning is recommended:**
+- `ntdll.dll` contains the core Windows NT functions that are less likely to be monitored
+- `kernel32.dll` scanning has been observed to trigger some security products
+- Most critical functions can be accessed through ntdll equivalents
+- Reduces the attack surface for detection
+- Enhanced hook detection works best with ntdll syscall patterns
+
+**When to scan kernel32:**
+- Development and testing environments
+- Research and analysis scenarios
+- When specific kernel32 functions are required
+- In environments where you have confirmed EDR behavior
 
 ## 🔧 Dependencies
 

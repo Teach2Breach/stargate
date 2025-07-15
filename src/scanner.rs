@@ -1,4 +1,5 @@
 use crate::signature::{FunctionSignature, SignatureDatabase, SignatureError};
+use crate::extractor::{get_system_dll_address, get_system_function_address};
 use moonwalk::find_dll_base;
 
 /// Result of a signature scan operation
@@ -302,10 +303,46 @@ fn try_alternative_locations(dll_base: usize, signature: &FunctionSignature) -> 
     None
 }
 
-/// Detect common hook patterns
+/// Detect common hook patterns with improved logic
 fn detect_hook_pattern(actual_bytes: &[u8], expected_bytes: &[u8]) -> Option<HookDetails> {
     if actual_bytes.len() < 5 {
         return None;
+    }
+    
+    // Check for ntdll syscall pattern first (most common)
+    if actual_bytes.len() >= 4 && actual_bytes[0] == 0x4C && actual_bytes[1] == 0x8B && actual_bytes[2] == 0xD1 {
+        // This is the standard ntdll syscall prologue: mov r10, rcx
+        match actual_bytes[3] {
+            0xE9 => {
+                // JMP instruction - definitely hooked
+                let jump_offset = u32::from_le_bytes([
+                    actual_bytes[4], actual_bytes[5], actual_bytes[6], actual_bytes[7]
+                ]) as usize;
+                let jump_target = actual_bytes.as_ptr() as usize + 8 + jump_offset;
+                
+                return Some(HookDetails {
+                    hook_type: HookType::JumpHook,
+                    original_bytes: expected_bytes[..8].to_vec(),
+                    hook_bytes: actual_bytes[..8].to_vec(),
+                    hook_offset: 0,
+                    jump_target: Some(jump_target),
+                });
+            }
+            0xB8 => {
+                // Normal syscall - not hooked
+                return None;
+            }
+            _ => {
+                // Unknown pattern after syscall prologue - likely hooked
+                return Some(HookDetails {
+                    hook_type: HookType::Unknown,
+                    original_bytes: expected_bytes[..4].to_vec(),
+                    hook_bytes: actual_bytes[..4].to_vec(),
+                    hook_offset: 0,
+                    jump_target: None,
+                });
+            }
+        }
     }
     
     // Check for JMP instruction (0xE9) at the beginning
@@ -340,8 +377,43 @@ fn detect_hook_pattern(actual_bytes: &[u8], expected_bytes: &[u8]) -> Option<Hoo
         });
     }
     
+    // Check for PUSH + RET pattern (common hook technique)
+    if actual_bytes.len() >= 6 && actual_bytes[0] == 0x68 && actual_bytes[5] == 0xC3 {
+        // PUSH imm32 + RET pattern
+        let push_value = u32::from_le_bytes([
+            actual_bytes[1], actual_bytes[2], actual_bytes[3], actual_bytes[4]
+        ]) as usize;
+        
+        return Some(HookDetails {
+            hook_type: HookType::JumpHook,
+            original_bytes: expected_bytes[..6].to_vec(),
+            hook_bytes: actual_bytes[..6].to_vec(),
+            hook_offset: 0,
+            jump_target: Some(push_value),
+        });
+    }
+    
+    // Check for MOV + JMP pattern
+    if actual_bytes.len() >= 7 && actual_bytes[0] == 0x48 && actual_bytes[1] == 0xB8 && actual_bytes[6] == 0xFF && actual_bytes[7] == 0xE0 {
+        // MOV RAX, imm64 + JMP RAX pattern
+        let target = u64::from_le_bytes([
+            actual_bytes[2], actual_bytes[3], actual_bytes[4], actual_bytes[5],
+            actual_bytes[6], actual_bytes[7], actual_bytes[8], actual_bytes[9]
+        ]) as usize;
+        
+        return Some(HookDetails {
+            hook_type: HookType::JumpHook,
+            original_bytes: expected_bytes[..10].to_vec(),
+            hook_bytes: actual_bytes[..10].to_vec(),
+            hook_offset: 0,
+            jump_target: Some(target),
+        });
+    }
+    
     // Check for inline hook (modified bytes in the middle)
-    for i in 0..actual_bytes.len().saturating_sub(4) {
+    // Look for differences beyond the first few bytes
+    let check_start = 4; // Skip first 4 bytes as they might be legitimately different
+    for i in check_start..actual_bytes.len().saturating_sub(4) {
         if actual_bytes[i..i+4] != expected_bytes[i..i+4] {
             return Some(HookDetails {
                 hook_type: HookType::InlineHook,

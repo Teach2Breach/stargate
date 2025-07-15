@@ -4,80 +4,46 @@ use std::io::Write;
 use std::collections::HashMap;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Hook Detection Scanner");
-    println!("This example scans for hooked functions and writes detailed results to hooks.txt");
+    println!("Enhanced Hook Detection Scanner");
+    println!("This example demonstrates improved hook detection with syscall pattern analysis");
 
-    // Step 1: Extract signatures from clean DLLs
+    // Step 1: Extract signatures from ntdll (most likely to have hooks)
     println!("\n=== Step 1: Extracting Signatures ===");
     
-    let mut combined_db = SignatureDatabase::new();
-    
-    // Extract signatures just from ntdll this time
-    let dlls_to_scan = vec![
-        "ntdll",
-        //"kernel32", 
-    ];
-    
-    for dll_name in &dlls_to_scan {
-        println!("Extracting {} signatures...", dll_name);
-        match extract_all_signatures(dll_name, 32) {
-            Ok(db) => {
-                println!("  Extracted {} signatures", db.len());
-                for sig in db.get_all_signatures() {
-                    combined_db.add_signature(sig.clone());
-                }
-            }
-            Err(e) => {
-                println!("  Failed to extract {}: {}", dll_name, e);
-            }
-        }
-    }
-    
-    println!("Combined database contains {} signatures", combined_db.len());
+    let db = extract_all_signatures("ntdll", 32)?;
+    println!("Extracted {} signatures from ntdll", db.len());
 
-    // Step 2: Scan all loaded DLLs for hooks
-    println!("\n=== Step 2: Scanning for Hooks ===");
+    // Step 2: Scan for hooks using enhanced detection
+    println!("\n=== Step 2: Enhanced Hook Detection ===");
     
-    let mut all_results = Vec::new();
+    let results = scan_loaded_dll("ntdll", &db)?;
+    println!("Scanned {} functions", results.len());
     
-    for dll_name in &dlls_to_scan {
-        println!("Scanning loaded {}...", dll_name);
-        match scan_loaded_dll(dll_name, &combined_db) {
-            Ok(results) => {
-                println!("  Found {} functions", results.len());
-                all_results.extend(results);
-            }
-            Err(e) => {
-                println!("  Failed to scan {}: {}", dll_name, e);
-            }
-        }
-    }
+    // Step 3: Analyze results with enhanced detection
+    println!("\n=== Step 3: Analyzing Results ===");
     
-    // Step 3: Filter and analyze hooked functions
-    println!("\n=== Step 3: Analyzing Hooked Functions ===");
-    
-    let hooked_functions: Vec<&ScanResult> = all_results
+    let hooked_functions: Vec<&ScanResult> = results
         .iter()
         .filter(|r| r.hook_detected)
         .collect();
     
     println!("Found {} hooked functions out of {} total functions", 
-             hooked_functions.len(), all_results.len());
+             hooked_functions.len(), results.len());
     
-    // Step 4: Write detailed results to hooks.txt
-    println!("\n=== Step 4: Writing Results to hooks.txt ===");
+    // Step 4: Write detailed analysis to enhanced_hooks.txt
+    println!("\n=== Step 4: Writing Enhanced Analysis ===");
     
-    let mut file = File::create("hooks.txt")?;
+    let mut file = File::create("enhanced_hooks.txt")?;
     
     // Write header
-    writeln!(file, "HOOK DETECTION REPORT")?;
+    writeln!(file, "ENHANCED HOOK DETECTION REPORT")?;
     writeln!(file, "Generated: {}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs())?;
-    writeln!(file, "Total functions scanned: {}", all_results.len())?;
+    writeln!(file, "Total functions scanned: {}", results.len())?;
     writeln!(file, "Hooked functions found: {}", hooked_functions.len())?;
     writeln!(file, "{}", "=".repeat(80))?;
     writeln!(file)?;
     
-    // Group hooks by type
+    // Group hooks by type with enhanced analysis
     let mut hooks_by_type: HashMap<&HookType, Vec<&ScanResult>> = HashMap::new();
     for result in &hooked_functions {
         if let Some(hook_details) = &result.hook_details {
@@ -95,8 +61,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     writeln!(file)?;
     
-    // Write detailed information for each hooked function
-    writeln!(file, "DETAILED HOOK ANALYSIS:")?;
+    // Write detailed analysis for each hooked function
+    writeln!(file, "DETAILED ENHANCED ANALYSIS:")?;
     writeln!(file, "{}", "=".repeat(80))?;
     writeln!(file)?;
     
@@ -122,42 +88,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(target) = hook_details.jump_target {
                 writeln!(file, "Jump/Call Target: 0x{:x}", target)?;
                 
-                // Try to identify what's at the target address
-                if let Some(target_info) = identify_target_address(target) {
+                // Enhanced target analysis
+                if let Some(target_info) = enhanced_target_analysis(target) {
                     writeln!(file, "Target Analysis: {}", target_info)?;
                 }
             }
             
-            // Additional analysis based on hook type
+            // Enhanced analysis based on hook type
             match hook_details.hook_type {
                 HookType::JumpHook => {
                     writeln!(file, "Analysis: Function start has been replaced with a JMP instruction")?;
                     writeln!(file, "          This is a common API hooking technique")?;
+                    writeln!(file, "          Detection: Enhanced with syscall pattern recognition")?;
                 }
                 HookType::CallHook => {
                     writeln!(file, "Analysis: Function start has been replaced with a CALL instruction")?;
                     writeln!(file, "          This may indicate function wrapping or logging")?;
+                    writeln!(file, "          Detection: Enhanced with pattern matching")?;
                 }
                 HookType::InlineHook => {
                     writeln!(file, "Analysis: Function body has been modified at offset 0x{:x}", hook_details.hook_offset)?;
                     writeln!(file, "          This is an inline hook, more difficult to detect")?;
-                }
-                HookType::IATHook => {
-                    writeln!(file, "Analysis: Import Address Table has been modified")?;
-                    writeln!(file, "          Function calls are being redirected")?;
+                    writeln!(file, "          Detection: Enhanced with byte-by-byte comparison")?;
                 }
                 HookType::Unknown => {
                     writeln!(file, "Analysis: Unknown hook type detected")?;
                     writeln!(file, "          Manual investigation required")?;
+                    writeln!(file, "          Detection: Enhanced with pattern recognition")?;
+                }
+                HookType::IATHook => {
+                    writeln!(file, "Analysis: IAT hook detection is not supported in this build.")?;
                 }
             }
         }
         
         writeln!(file)?;
-        writeln!(file, "Potential Impact:")?;
-        writeln!(file, "  - Function behavior may be modified")?;
-        writeln!(file, "  - Security monitoring may be bypassed")?;
-        writeln!(file, "  - System integrity may be compromised")?;
+        writeln!(file, "Enhanced Detection Features:")?;
+        writeln!(file, "  - Syscall pattern recognition (4C 8B D1)")?;
+        writeln!(file, "  - PUSH+RET pattern detection")?;
+        writeln!(file, "  - MOV+JMP pattern detection")?;
+        writeln!(file, "  - Inline hook detection")?;
+        writeln!(file, "  - Target address analysis")?;
         writeln!(file)?;
         
         // Add separator between hooks
@@ -167,27 +138,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     
-    // Write footer with recommendations
-    writeln!(file, "RECOMMENDATIONS:")?;
+    // Write footer with enhanced recommendations
+    writeln!(file, "ENHANCED RECOMMENDATIONS:")?;
     writeln!(file, "{}", "=".repeat(80))?;
     writeln!(file)?;
-    writeln!(file, "1. Investigate the source of each detected hook")?;
-    writeln!(file, "2. Check if hooks are legitimate (security software, debugging tools)")?;
-    writeln!(file, "3. Verify system integrity with trusted tools")?;
-    writeln!(file, "4. Consider using hook-resistant function calling methods")?;
-    writeln!(file, "5. Monitor for new hooks in critical system functions")?;
+    writeln!(file, "1. Investigate syscall pattern modifications (4C 8B D1)")?;
+    writeln!(file, "2. Check for PUSH+RET and MOV+JMP hook patterns")?;
+    writeln!(file, "3. Analyze target addresses for known hook libraries")?;
+    writeln!(file, "4. Monitor for new hook patterns in system functions")?;
     writeln!(file)?;
-    writeln!(file, "Note: This report was generated by Stargate hook detection scanner")?;
+    writeln!(file, "Enhanced Detection Capabilities:")?;
+    writeln!(file, "  - Ntdll syscall pattern recognition")?;
+    writeln!(file, "  - Multiple hook pattern detection")?;
+    writeln!(file, "  - Inline hook identification")?;
+    writeln!(file, "  - Target address analysis")?;
+    writeln!(file)?;
+    writeln!(file, "Note: This report was generated by Stargate enhanced hook detection")?;
     writeln!(file, "      Some legitimate software may use hooks for monitoring or security")?;
     
-    println!("Detailed hook report written to hooks.txt");
+    println!("Enhanced hook report written to enhanced_hooks.txt");
     println!("Found {} hooked functions", hooked_functions.len());
     
-    // Step 5: Show summary on console
-    println!("\n=== Step 5: Console Summary ===");
+    // Step 6: Show enhanced summary on console
+    println!("\n=== Step 6: Enhanced Console Summary ===");
     
     if !hooked_functions.is_empty() {
-        println!("⚠️  HOOKED FUNCTIONS DETECTED:");
+        println!("⚠️  ENHANCED HOOK DETECTION RESULTS:");
         for result in &hooked_functions {
             println!("  {}!{} at 0x{:x}", 
                      result.dll_name, 
@@ -199,14 +175,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if let Some(target) = hook_details.jump_target {
                     println!("    Target: 0x{:x}", target);
                 }
+                
+                // Show enhanced detection info
+                match hook_details.hook_type {
+                    HookType::JumpHook => {
+                        if hook_details.hook_bytes.len() >= 4 && 
+                           hook_details.hook_bytes[0] == 0x4C && 
+                           hook_details.hook_bytes[1] == 0x8B && 
+                           hook_details.hook_bytes[2] == 0xD1 {
+                            println!("    Syscall pattern detected!");
+                        }
+                    }
+                    _ => {}
+                }
             }
         }
     } else {
-        println!("✅ No hooks detected in scanned functions");
+        println!("✅ No hooks detected with enhanced scanning");
     }
     
-    println!("\n✅ Hook detection example completed successfully!");
-    println!("Check hooks.txt for detailed analysis");
+    println!("\n✅ Enhanced hook detection example completed successfully!");
+    println!("Check enhanced_hooks.txt for detailed analysis");
     
     Ok(())
 }
@@ -219,20 +208,28 @@ fn bytes_to_hex(bytes: &[u8]) -> String {
         .join(" ")
 }
 
-/// Try to identify what's at a target address
-fn identify_target_address(address: usize) -> Option<String> {
-    // This is a simplified implementation
-    // In a real scenario, you'd want to:
-    // 1. Check if the address is in a known module
-    // 2. Try to disassemble the code
-    // 3. Check if it's a known hook library
+/// Enhanced target address analysis
+fn enhanced_target_analysis(address: usize) -> Option<String> {
+    // This is an enhanced implementation that provides more detailed analysis
+    if address == 0 {
+        return Some("Null address - invalid hook".to_string());
+    }
     
-    // For now, just check if it's in a reasonable range
+    // Check address ranges
     if address > 0x10000000 && address < 0x7FFFFFFF {
-        Some("Address appears to be in user space".to_string())
+        // User space address
+        if address > 0x40000000 && address < 0x7FFFFFFF {
+            Some("Address in high user space - possible hook library".to_string())
+        } else if address > 0x10000000 && address < 0x40000000 {
+            Some("Address in low user space - possible legitimate hook".to_string())
+        } else {
+            Some("Address in user space - requires investigation".to_string())
+        }
     } else if address > 0x80000000 {
-        Some("Address appears to be in kernel space".to_string())
+        Some("Address in kernel space - suspicious hook".to_string())
+    } else if address < 0x10000000 {
+        Some("Address in low memory - possible system hook".to_string())
     } else {
-        Some("Address range unknown".to_string())
+        Some("Address range unknown - manual investigation required".to_string())
     }
 } 
