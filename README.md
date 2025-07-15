@@ -235,6 +235,68 @@ NtQuerySystemTime: 133970745314599291 (status: 0)
 
 This example demonstrates clean function calling with minimal logging - only prints the function name and result, and uses ntdll for maximum opsec.
 
+### Unhook Example (Advanced)
+⚠️ **WARNING: This example will attempt to unhook ntdll functions! Only run in controlled environments!**
+
+The unhook example demonstrates enhanced hook detection combined with automatic unhooking using nt_unhooker:
+```bash
+cargo run --example unhook
+```
+
+**Features:**
+- Enhanced hook detection with syscall pattern recognition
+- Automatic unhooking using nt_unhooker library
+- Pre and post-unhook verification scanning
+- Detailed success rate analysis
+- Comprehensive reporting to `unhook_report.txt`
+
+**Example Output:**
+```
+Stargate Unhook Example
+This example demonstrates enhanced hook detection and unhooking using nt_unhooker
+⚠️  WARNING: This example will attempt to unhook ntdll functions!
+   Only run this in a controlled environment!
+
+=== Step 1: Extracting Signatures ===
+Extracted 2488 signatures from ntdll
+
+=== Step 2: Initial Hook Detection ===
+Scanned 2481 functions
+Found 64 hooked functions before unhooking
+
+=== Step 3: Writing Initial Analysis ===
+
+=== Step 4: Unhooking Functions ===
+Attempting to unhook 64 functions using nt_unhooker...
+Processing sections...
+Processing section: .text
+Found .text section at RVA: 0x1000, Raw offset: 0x1000, Size: 0x12e000
+Writing clean section at 0x7ffb28711000 with size 0x12e000
+Successfully wrote 1236992 bytes
+✅ nt_unhooker unhook_ntdll() completed successfully
+
+=== Step 5: Post-Unhook Verification ===
+Post-unhook scan completed: 2481 functions
+Found 0 hooked functions after unhooking
+
+=== Step 6: Analysis and Comparison ===
+Unhooking Results:
+  Initial hooks: 64
+  Remaining hooks: 0
+  Successfully unhooked: 64
+  Success rate: 100.0%
+
+=== Step 7: Final Summary ===
+🎉 All 64 hooks were successfully removed!
+
+✅ Unhook example completed successfully!
+Check unhook_report.txt for detailed analysis
+```
+
+**Dependencies:**
+- Requires `nt_unhooker` crate for unhooking functionality
+- Uses `winapi` for Windows API types
+
 ### Building Examples with Static CRT
 For production builds with static linking:
 ```bash
@@ -310,10 +372,14 @@ target\x86_64-pc-windows-msvc\release\examples\enhanced_hook_detection.exe
 - `byont` - Clean DLL extraction and processing
 - `moonwalk` - Memory scanning and DLL base address location
 - `thiserror` - Error handling
+- `nt_unhooker` - NTDLL unhooking functionality (optional, for unhook example)
+- `winapi` - Windows API bindings (optional, for unhook example)
 
 ## Future Development
 
-- `unhooking` - add optional unhooking feature for functions detected with hooks
+- Enhanced unhooking capabilities for other DLLs beyond ntdll
+- Additional hook detection patterns and techniques
+- Performance optimizations for large-scale scanning
 
 ## 🔗 Related Projects
 

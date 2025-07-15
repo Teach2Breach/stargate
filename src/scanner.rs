@@ -61,6 +61,11 @@ pub fn scan_loaded_dll(
     let signatures = db.get_signatures_by_dll(dll_name);
     
     for signature in signatures {
+        // Skip data exports that commonly cause false positives
+        if is_likely_data_export(&signature.function_name) {
+            continue;
+        }
+        
         if let Some(scan_result) = find_function_by_signature(dll_base, signature) {
             results.push(scan_result);
         }
@@ -448,6 +453,23 @@ fn try_partial_signature_match(actual_bytes: &[u8], expected_bytes: &[u8]) -> f3
     }
     
     match_count as f32 / (actual_bytes.len() - min_match_length) as f32
+}
+
+/// Check if a function name is likely a data export (not a function)
+fn is_likely_data_export(function_name: &str) -> bool {
+    // Common data export patterns that cause false positives
+    let data_patterns = [
+        "NlsMbCodePageTag",
+        "RtlNtdllName", 
+        "NlsMbOemCodePageTag",
+        "LdrSystemDllInitBlock",
+        "NlsAnsiCodePage",
+        "KiUserInvertedFunctionTable",
+        "RtlpFreezeTimeBias",
+
+    ];
+    
+    data_patterns.contains(&function_name)
 }
 
 /// Check if memory is readable
