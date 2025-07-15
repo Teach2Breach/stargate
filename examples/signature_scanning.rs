@@ -32,8 +32,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Step 2: Scan loaded DLLs for matching functions
     println!("\n=== Step 2: Scanning Loaded DLLs ===");
     
-    let windows_version = "10.0.26100";
-    
     // Scan ntdll
     println!("Scanning loaded ntdll.dll...");
     let ntdll_results = scan_loaded_dll("ntdll", &combined_db)?;
