@@ -25,3 +25,4 @@ target
 .cursor/
 *.db
 Cargo.lock
+*.txt
