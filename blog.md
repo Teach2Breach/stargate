@@ -161,8 +161,6 @@ let dll_base = find_dll_base(dll_name)
     .ok_or_else(|| SignatureError::DllNotFound(dll_name.to_string()))?;
 ```
 
-This is optional and only used when we want to verify the accuracy of our signature-based approach.
-
 ### 5. Multi-Method Signature Matching
 
 Stargate implements a sophisticated multi-stage scanning approach that progressively falls back to more aggressive methods:
