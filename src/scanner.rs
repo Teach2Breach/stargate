@@ -456,7 +456,7 @@ fn try_partial_signature_match(actual_bytes: &[u8], expected_bytes: &[u8]) -> f3
 }
 
 /// Check if a function name is likely a data export (not a function)
-fn is_likely_data_export(function_name: &str) -> bool {
+pub fn is_likely_data_export(function_name: &str) -> bool {
     // Common data export patterns that cause false positives
     let data_patterns = [
         "NlsMbCodePageTag",

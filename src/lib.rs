@@ -64,6 +64,8 @@ pub use scanner::{
     scan_all_loaded_dlls,
     find_specific_function,
     print_scan_results,
+    is_likely_data_export,
+    find_function_by_signature,
     ScanResult,
     ScanMethod,
     HookDetails,
