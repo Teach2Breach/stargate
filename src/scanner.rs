@@ -109,7 +109,7 @@ pub fn find_specific_function(
 }
 
 /// Core function to find a function by its signature with hook-resistant logic
-fn find_function_by_signature(
+pub fn find_function_by_signature(
     dll_base: usize,
     signature: &FunctionSignature,
 ) -> Option<ScanResult> {
