@@ -47,6 +47,7 @@ pub use signature::{
 
 pub use extractor::{
     extract_all_signatures,
+    extract_all_signatures_from_loaded,
     extract_single_signature,
     get_all_export_names,
     extract_system_function_bytes,

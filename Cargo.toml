@@ -35,7 +35,7 @@ path = "examples/unhook.rs"
 byont = { git = "https://github.com/Teach2Breach/byont.git", branch = "opsec" }
 
 thiserror = "1.0"
-moonwalk = { git = "https://github.com/Teach2Breach/moonwalk.git", branch = "opsec-dev" }
+moonwalk = { git = "https://github.com/Teach2Breach/moonwalk.git" }
 nt_unhooker = { git = "https://github.com/Teach2Breach/nt_unhooker.git" }
 winapi = { version = "0.3", features = ["winnt", "processthreadsapi", "memoryapi", "errhandlingapi", "libloaderapi"] }
 

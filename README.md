@@ -315,6 +315,7 @@ target\x86_64-pc-windows-msvc\release\examples\enhanced_hook_detection.exe
 ### Core Functions
 
 - `extract_all_signatures(dll_name, length)` - Extract all signatures from clean DLL (version detected automatically)
+- `extract_all_signatures_from_loaded)` - Extract all signatures from DLL by base address.
 - `extract_single_signature(dll_name, function_name, length)` - Extract single function signature
 - `scan_loaded_dll(dll_name, db)` - Scan loaded DLL for matching functions
 - `find_specific_function(dll_name, function_name, db)` - Find specific function

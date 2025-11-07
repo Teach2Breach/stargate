@@ -109,6 +109,49 @@ pub fn extract_single_signature(
     Ok(result)
 }
 
+/// Extract all function signatures from an already-loaded DLL (given base address)
+pub fn extract_all_signatures_from_loaded(
+    dll_name: &str,
+    dll_base: usize,
+    signature_length: usize,
+) -> Result<SignatureDatabase, SignatureError> {
+    let mut dll_name_clean = dll_name.to_lowercase();
+    if dll_name_clean.ends_with(".dll") {
+        dll_name_clean = dll_name_clean.trim_end_matches(".dll").to_string();
+    }
+
+    // Start from export enumeration using the provided base address
+    let memory = dll_base as *mut u8;
+    let function_names = get_all_export_names(memory);
+    if function_names.is_empty() {
+        return Err(SignatureError::NoExportDirectory);
+    }
+
+    // Create signature database
+    let mut database = SignatureDatabase::new();
+
+    // For RVA calculations on a loaded module, the base is the module base
+    let clean_base = dll_base;
+
+    // Extract signatures for all functions
+    for func_name in function_names {
+        if let Some((signature_bytes, function_rva)) =
+            extract_function_signature(memory, clean_base, &func_name, signature_length)
+        {
+            let signature = FunctionSignature::new(
+                dll_name_clean.clone(),
+                func_name,
+                "dynamic".to_string(),
+                signature_bytes,
+                function_rva,
+            );
+            database.add_signature(signature);
+        }
+    }
+
+    Ok(database)
+}
+
 /// Get all exported function names from a DLL
 pub fn get_all_export_names(memory: *mut u8) -> Vec<String> {
     unsafe {
